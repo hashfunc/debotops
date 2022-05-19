@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 
+	istioclient "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,19 +23,86 @@ type ListenerReconciler struct {
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=get;list;watch;create;update
+
+func (r *ListenerReconciler) GetListener(ctx context.Context, request ctrl.Request) (*debotops.Listener, error) {
+	listener := &debotops.Listener{}
+
+	if err := r.Get(ctx, request.NamespacedName, listener); err != nil {
+		return nil, err
+	}
+
+	return listener, nil
+}
+
+func (r *ListenerReconciler) GetGateway(ctx context.Context, request ctrl.Request) (*istioclient.Gateway, error) {
+	gateway := &istioclient.Gateway{}
+
+	if err := r.Get(ctx, request.NamespacedName, gateway); err != nil {
+		return nil, err
+	}
+
+	return gateway, nil
+}
+
+func IgnoreIsNotFound(err error) error {
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Listener object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
-func (r *ListenerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	listener, err := r.GetListener(ctx, request)
+
+	if err != nil {
+		return ctrl.Result{}, IgnoreIsNotFound(err)
+	}
+
+	gateway, err := r.GetGateway(ctx, request)
+
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			newGateway, err := listener.NewGateway()
+
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			if err := r.Create(ctx, newGateway); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{Requeue: true}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	revision, err := listener.Hash()
+
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if gateway.Annotations[debotops.GetHashKey()] != revision {
+		newGateway, err := listener.NewGateway()
+
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		newGateway.SetResourceVersion(gateway.GetResourceVersion())
+
+		if err := r.Update(ctx, newGateway); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -42,5 +111,6 @@ func (r *ListenerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 func (r *ListenerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&debotops.Listener{}).
+		Owns(&istioclient.Gateway{}).
 		Complete(r)
 }
