@@ -11,6 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	debotops "github.com/hashfunc/debotops/api/v1alpha1"
+	"github.com/hashfunc/debotops/pkg/core"
+	"github.com/hashfunc/debotops/pkg/k8s"
 )
 
 // ListenerReconciler reconciles a Listener object
@@ -22,6 +24,8 @@ type ListenerReconciler struct {
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;create
 
 //+kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=get;list;watch;create;update
 
@@ -56,6 +60,21 @@ func IgnoreIsNotFound(err error) error {
 // move the current state of the cluster closer to the desired state.
 func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+
+	_, err := k8s.GetConfigSecret(r.Client, ctx, request.Namespace)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			configSecret := core.NewConfigSecret(request.Namespace)
+
+			if err := r.Create(ctx, configSecret); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{Requeue: true}, nil
+		}
+
+		return ctrl.Result{}, err
+	}
 
 	listener, err := r.GetListener(ctx, request)
 
