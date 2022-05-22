@@ -25,6 +25,6 @@ func GetSecret(client client.Client, ctx context.Context, namespace, name string
 	return secret, nil
 }
 
-func GetConfigSecret(client client.Client, ctx context.Context, namespace string) (*corev1.Secret, error) {
-	return GetSecret(client, ctx, namespace, core.ConfigSecretName)
+func GetDeBotOpsSecret(client client.Client, ctx context.Context, namespace string) (*corev1.Secret, error) {
+	return GetSecret(client, ctx, namespace, core.DeBotOpsSecretName)
 }

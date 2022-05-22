@@ -12,12 +12,12 @@ type Config struct {
 	RootSecret string
 }
 
-const ConfigSecretName = "debotops-config"
+const DeBotOpsSecretName = "debotops-secret"
 
-func NewConfigSecret(namespace string) *corev1.Secret {
+func NewDeBotOpsSecret(namespace string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConfigSecretName,
+			Name:      DeBotOpsSecretName,
 			Namespace: namespace,
 		},
 		StringData: map[string]string{

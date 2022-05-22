@@ -61,10 +61,10 @@ func IgnoreIsNotFound(err error) error {
 func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	_, err := k8s.GetConfigSecret(r.Client, ctx, request.Namespace)
+	_, err := k8s.GetDeBotOpsSecret(r.Client, ctx, request.Namespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			configSecret := core.NewConfigSecret(request.Namespace)
+			configSecret := core.NewDeBotOpsSecret(request.Namespace)
 
 			if err := r.Create(ctx, configSecret); err != nil {
 				return ctrl.Result{}, err
