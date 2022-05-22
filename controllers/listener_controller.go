@@ -64,10 +64,15 @@ func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request
 	_, err := k8s.GetDeBotOpsSecret(r.Client, ctx, request.Namespace)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			configSecret := core.NewDeBotOpsSecret(request.Namespace)
-
-			if err := r.Create(ctx, configSecret); err != nil {
+			rootSecrets, err := core.NewDeBotOpsSecret(request.Namespace)
+			if err != nil {
 				return ctrl.Result{}, err
+			}
+
+			for _, secret := range rootSecrets {
+				if err := r.Create(ctx, secret); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
 
 			return ctrl.Result{Requeue: true}, nil

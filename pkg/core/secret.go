@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/base64"
+	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 
 	corev1 "k8s.io/api/core/v1"
@@ -14,17 +16,43 @@ type Config struct {
 
 const DeBotOpsSecretName = "debotops-secret"
 
-func NewDeBotOpsSecret(namespace string) *corev1.Secret {
-	return &corev1.Secret{
+func NewDeBotOpsSecret(namespace string) ([]*corev1.Secret, error) {
+	var secrets []*corev1.Secret
+
+	rootName := generateRandomString(16)
+	rootSecret := generateRandomString(64)
+	rootPassword := generateRandomString(32)
+
+	rootPasswordHash, err := encryptPassword(rootPassword, rootSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	initialSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      DeBotOpsSecretName + "-initial",
+			Namespace: namespace,
+		},
+		StringData: map[string]string{
+			"RootPassword": rootPassword,
+		},
+	}
+	secrets = append(secrets, initialSecret)
+
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      DeBotOpsSecretName,
 			Namespace: namespace,
 		},
 		StringData: map[string]string{
-			"RootName":   generateRandomString(16),
-			"RootSecret": generateRandomString(64),
+			"RootName":         rootName,
+			"RootSecret":       rootSecret,
+			"RootPasswordHash": rootPasswordHash,
 		},
 	}
+	secrets = append(secrets, secret)
+
+	return secrets, nil
 }
 
 const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -36,4 +64,16 @@ func generateRandomString(length int) string {
 	}
 
 	return string(buffer)
+}
+
+func encryptPassword(password, secret string) (string, error) {
+	plain := []byte(password + secret)
+
+	hashBytes, err := bcrypt.GenerateFromPassword(plain, bcrypt.DefaultCost)
+	if err != nil {
+		return "", nil
+	}
+
+	base64HashString := base64.StdEncoding.EncodeToString(hashBytes)
+	return base64HashString, nil
 }
