@@ -1,7 +1,7 @@
 package core
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 
@@ -9,9 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Config struct {
-	RootName   string
-	RootSecret string
+type Root struct {
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+	SecretKey    string `json:"secret_key"`
 }
 
 const DeBotOpsSecretName = "debotops-secret"
@@ -19,11 +20,22 @@ const DeBotOpsSecretName = "debotops-secret"
 func NewDeBotOpsSecret(namespace string) ([]*corev1.Secret, error) {
 	var secrets []*corev1.Secret
 
-	rootName := generateRandomString(16)
-	rootSecret := generateRandomString(64)
-	rootPassword := generateRandomString(32)
+	username := generateRandomString(16)
+	password := generateRandomString(32)
+	secretKey := generateRandomString(64)
 
-	rootPasswordHash, err := encryptPassword(rootPassword, rootSecret)
+	passwordHash, err := encryptPassword(password, secretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	root := Root{
+		Username:     username,
+		PasswordHash: passwordHash,
+		SecretKey:    secretKey,
+	}
+
+	rootJson, err := json.Marshal(&root)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +46,7 @@ func NewDeBotOpsSecret(namespace string) ([]*corev1.Secret, error) {
 			Namespace: namespace,
 		},
 		StringData: map[string]string{
-			"RootPassword": rootPassword,
+			"password": password,
 		},
 	}
 	secrets = append(secrets, initialSecret)
@@ -44,10 +56,8 @@ func NewDeBotOpsSecret(namespace string) ([]*corev1.Secret, error) {
 			Name:      DeBotOpsSecretName,
 			Namespace: namespace,
 		},
-		StringData: map[string]string{
-			"RootName":         rootName,
-			"RootSecret":       rootSecret,
-			"RootPasswordHash": rootPasswordHash,
+		Data: map[string][]byte{
+			"root": rootJson,
 		},
 	}
 	secrets = append(secrets, secret)
@@ -74,6 +84,5 @@ func encryptPassword(password, secret string) (string, error) {
 		return "", nil
 	}
 
-	base64HashString := base64.StdEncoding.EncodeToString(hashBytes)
-	return base64HashString, nil
+	return string(hashBytes), nil
 }
