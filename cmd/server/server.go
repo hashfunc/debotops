@@ -7,6 +7,12 @@ import (
 )
 
 func main() {
-	apiserver := server.NewServer()
-	log.Fatal(apiserver.Start())
+	apiserver, err := server.NewServer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Fatal(
+		apiserver.Start(),
+	)
 }

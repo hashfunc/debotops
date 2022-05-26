@@ -1,10 +1,15 @@
 package server
 
 import (
+	"context"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/hashfunc/debotops/pkg/core"
 )
 
 func getClientConfigLoader() clientcmd.ClientConfig {
@@ -14,7 +19,7 @@ func getClientConfigLoader() clientcmd.ClientConfig {
 	return clientcmd.NewInteractiveDeferredLoadingClientConfig(rules, &overrides, os.Stdin)
 }
 
-func GetClientset() (*kubernetes.Clientset, error) {
+func getClientset() (*kubernetes.Clientset, error) {
 	loader := getClientConfigLoader()
 
 	config, err := loader.ClientConfig()
@@ -28,4 +33,11 @@ func GetClientset() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
+}
+
+func (server *Server) getDeBotOpsSecret() (*corev1.Secret, error) {
+	return server.clientset.
+		CoreV1().
+		Secrets("default").
+		Get(context.TODO(), core.DeBotOpsSecretName, metav1.GetOptions{})
 }

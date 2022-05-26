@@ -2,29 +2,31 @@ package server
 
 import (
 	"net/http"
+
+	"k8s.io/client-go/kubernetes"
 )
 
 type Server struct {
-	mux *http.ServeMux
+	mux       *http.ServeMux
+	clientset *kubernetes.Clientset
 }
 
-func NewServer() *Server {
-	server := &Server{
-		mux: http.NewServeMux(),
+func NewServer() (*Server, error) {
+	clientset, err := getClientset()
+	if err != nil {
+		return nil, err
 	}
 
-	server.mux.HandleFunc("/", server.greeting)
+	server := &Server{
+		mux:       http.NewServeMux(),
+		clientset: clientset,
+	}
 
-	return server
+	server.mux.HandleFunc("/login", server.login)
+
+	return server, nil
 }
 
 func (server *Server) Start() error {
 	return http.ListenAndServe(":8386", server.mux)
-}
-
-func (server *Server) greeting(writer http.ResponseWriter, _ *http.Request) {
-	message := "Greeting from API server"
-	if _, err := writer.Write([]byte(message)); err != nil {
-		http.Error(writer, "Internal Server Error", http.StatusInternalServerError)
-	}
 }
