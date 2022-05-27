@@ -6,22 +6,24 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+type Kind string
+
 type Claims struct {
 	jwt.RegisteredClaims
 
-	Kind string `json:"kind"`
+	Kind Kind `json:"kind"`
 }
 
 const (
-	KindAccessToken  = "ACCESS"
-	KindRefreshToken = "REFRESH"
+	KindAccessToken  Kind = "ACCESS"
+	KindRefreshToken Kind = "REFRESH"
 )
 const (
 	AccessTokenDuration  = 15 * time.Minute
 	RefreshTokenDuration = time.Hour
 )
 
-func NewToken(key, kind string) (string, error) {
+func NewToken(key string, kind Kind) (string, error) {
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: expires(kind),
@@ -39,7 +41,7 @@ func NewToken(key, kind string) (string, error) {
 	return signed, nil
 }
 
-func expires(kind string) *jwt.NumericDate {
+func expires(kind Kind) *jwt.NumericDate {
 	switch kind {
 	case KindAccessToken:
 		return jwt.NewNumericDate(time.Now().Add(AccessTokenDuration))
