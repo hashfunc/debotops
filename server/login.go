@@ -55,24 +55,25 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	refreshToken, err := auth.NewToken(root.SecretKey, auth.KindRefreshToken)
+	refresh, err := auth.NewAuth(root.SecretKey, auth.KindRefresh)
 	if err != nil {
 		Error500(writer, err)
 		return
 	}
 
-	cookie := fmt.Sprintf("refresh-token=%s; HttpOnly", refreshToken)
+	expires := refresh.Expires.UTC().Format(http.TimeFormat)
+	cookie := fmt.Sprintf("refresh-token=%s; Expires=%s; HttpOnly", refresh, expires)
 	writer.Header().Set("Content-Type", "application/json")
 	writer.Header().Set("Set-Cookie", cookie)
 
-	token, err := auth.NewToken(root.SecretKey, auth.KindRefreshToken)
+	access, err := auth.NewAuth(root.SecretKey, auth.KindAccess)
 	if err != nil {
 		Error500(writer, err)
 		return
 	}
 
 	response := map[string]string{
-		"token": token,
+		"token": access.String(),
 	}
 
 	responseBody, err := json.Marshal(&response)
@@ -85,6 +86,4 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) {
 		Error500(writer, err)
 		return
 	}
-
-	writer.WriteHeader(http.StatusOK)
 }
