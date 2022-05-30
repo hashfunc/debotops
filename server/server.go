@@ -23,6 +23,7 @@ func NewServer() (*Server, error) {
 	}
 
 	server.mux.HandleFunc("/login", server.login)
+	server.mux.HandleFunc("/refresh", server.refresh)
 
 	return server, nil
 }
