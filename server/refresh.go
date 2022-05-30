@@ -2,84 +2,65 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/hashfunc/debotops/pkg/auth"
 	"github.com/hashfunc/debotops/pkg/core"
 )
 
-func (server *Server) refresh(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodPost {
-		Error405(writer, nil)
-		return
-	}
-
-	refreshTokenCookie, err := request.Cookie("refresh-token")
-	if err != nil {
-		Error400(writer, nil)
-		return
+func (server *Server) refresh(ctx *fiber.Ctx) error {
+	refreshTokenCookie := ctx.Cookies("refresh-token")
+	if refreshTokenCookie == "" {
+		return fiber.ErrUnauthorized
 	}
 
 	secret, err := server.getDeBotOpsSecret()
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	secretData := secret.Data
 
 	var root core.Root
 	if err := json.Unmarshal(secretData["root"], &root); err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	token, err := jwt.ParseWithClaims(refreshTokenCookie.Value, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(refreshTokenCookie, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(root.SecretKey), nil
 	})
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	claims := token.Claims.(*auth.Claims)
 
 	if err := claims.Valid(); err != nil {
-		Error400(writer, err)
-		return
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	refresh, err := auth.NewAuth(root.SecretKey, auth.KindRefresh)
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	expires := refresh.Expires.UTC().Format(http.TimeFormat)
-	cookie := fmt.Sprintf("refresh-token=%s; Expires=%s; HttpOnly", refresh, expires)
-	writer.Header().Set("Content-Type", "application/json")
-	writer.Header().Set("Set-Cookie", cookie)
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh-token",
+		Value:    refresh.String(),
+		Expires:  refresh.Expires,
+		HTTPOnly: true,
+	})
 
 	access, err := auth.NewAuth(root.SecretKey, auth.KindAccess)
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	response := map[string]string{
+	data := fiber.Map{
 		"token": access.String(),
 	}
 
-	responseBody, err := json.Marshal(&response)
-	if err != nil {
-		Error500(writer, err)
-		return
-	}
-
-	if _, err := writer.Write(responseBody); err != nil {
-		Error500(writer, err)
-		return
-	}
+	return ctx.JSON(data)
 }

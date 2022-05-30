@@ -1,13 +1,12 @@
 package server
 
 import (
-	"net/http"
-
+	"github.com/gofiber/fiber/v2"
 	"k8s.io/client-go/kubernetes"
 )
 
 type Server struct {
-	mux       *http.ServeMux
+	fiber     *fiber.App
 	clientset *kubernetes.Clientset
 }
 
@@ -18,16 +17,16 @@ func NewServer() (*Server, error) {
 	}
 
 	server := &Server{
-		mux:       http.NewServeMux(),
+		fiber:     fiber.New(),
 		clientset: clientset,
 	}
 
-	server.mux.HandleFunc("/login", server.login)
-	server.mux.HandleFunc("/refresh", server.refresh)
+	server.fiber.Post("/login", server.login)
+	server.fiber.Post("/refresh", server.refresh)
 
 	return server, nil
 }
 
 func (server *Server) Start() error {
-	return http.ListenAndServe(":8386", server.mux)
+	return server.fiber.Listen(":8386")
 }

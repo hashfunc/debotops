@@ -2,9 +2,9 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
+
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/hashfunc/debotops/pkg/auth"
 	"github.com/hashfunc/debotops/pkg/core"
@@ -15,35 +15,23 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (server *Server) login(writer http.ResponseWriter, request *http.Request) {
-	if request.Method != http.MethodPost {
-		Error405(writer, nil)
-	}
+func (server *Server) login(ctx *fiber.Ctx) error {
+	payload := &LoginRequest{}
 
-	body := request.Body
-	defer func() {
-		_ = body.Close()
-	}()
-
-	var payload LoginRequest
-	err := json.NewDecoder(body).Decode(&payload)
-	if err != nil {
-		Error400(writer, err)
-		return
+	if err := ctx.BodyParser(payload); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	secret, err := server.getDeBotOpsSecret()
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	secretData := secret.Data
 
 	var root core.Root
 	if err := json.Unmarshal(secretData["root"], &root); err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -51,39 +39,29 @@ func (server *Server) login(writer http.ResponseWriter, request *http.Request) {
 		[]byte(payload.Password+root.SecretKey),
 	)
 	if err != nil {
-		Error400(writer, err)
-		return
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
 	refresh, err := auth.NewAuth(root.SecretKey, auth.KindRefresh)
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	expires := refresh.Expires.UTC().Format(http.TimeFormat)
-	cookie := fmt.Sprintf("refresh-token=%s; Expires=%s; HttpOnly", refresh, expires)
-	writer.Header().Set("Content-Type", "application/json")
-	writer.Header().Set("Set-Cookie", cookie)
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh-token",
+		Value:    refresh.String(),
+		Expires:  refresh.Expires,
+		HTTPOnly: true,
+	})
 
 	access, err := auth.NewAuth(root.SecretKey, auth.KindAccess)
 	if err != nil {
-		Error500(writer, err)
-		return
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	response := map[string]string{
+	data := fiber.Map{
 		"token": access.String(),
 	}
 
-	responseBody, err := json.Marshal(&response)
-	if err != nil {
-		Error500(writer, err)
-		return
-	}
-
-	if _, err := writer.Write(responseBody); err != nil {
-		Error500(writer, err)
-		return
-	}
+	return ctx.JSON(data)
 }
