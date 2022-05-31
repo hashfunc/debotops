@@ -6,19 +6,26 @@ import (
 )
 
 type Server struct {
-	fiber     *fiber.App
-	clientset *kubernetes.Clientset
+	fiber               *fiber.App
+	kubernetesClientset *kubernetes.Clientset
+	debotopsClientset   *DeBotOpsClientset
 }
 
 func NewServer() (*Server, error) {
-	clientset, err := getClientset()
+	kubernetesClientset, err := getClientset()
+	if err != nil {
+		return nil, err
+	}
+
+	debotopsClientset, err := NewDeBotOpsClientset()
 	if err != nil {
 		return nil, err
 	}
 
 	server := &Server{
-		fiber:     fiber.New(),
-		clientset: clientset,
+		fiber:               fiber.New(),
+		kubernetesClientset: kubernetesClientset,
+		debotopsClientset:   debotopsClientset,
 	}
 
 	server.fiber.Post("/login", server.login)
