@@ -1,13 +1,10 @@
 package server
 
 import (
-	"encoding/json"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/hashfunc/debotops/pkg/auth"
-	"github.com/hashfunc/debotops/pkg/core"
 )
 
 func (server *Server) refresh(ctx *fiber.Ctx) error {
@@ -16,20 +13,8 @@ func (server *Server) refresh(ctx *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	secret, err := server.getDeBotOpsSecret()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	secretData := secret.Data
-
-	var root core.Root
-	if err := json.Unmarshal(secretData["root"], &root); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
 	token, err := jwt.ParseWithClaims(refreshTokenCookie, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(root.SecretKey), nil
+		return []byte(server.root.SecretKey), nil
 	})
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -41,7 +26,7 @@ func (server *Server) refresh(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	refresh, err := auth.NewAuth(root.SecretKey, auth.KindRefresh)
+	refresh, err := auth.NewAuth(server.root.SecretKey, auth.KindRefresh)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -53,7 +38,7 @@ func (server *Server) refresh(ctx *fiber.Ctx) error {
 		HTTPOnly: true,
 	})
 
-	access, err := auth.NewAuth(root.SecretKey, auth.KindAccess)
+	access, err := auth.NewAuth(server.root.SecretKey, auth.KindAccess)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

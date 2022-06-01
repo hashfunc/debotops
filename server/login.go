@@ -1,13 +1,12 @@
 package server
 
 import (
-	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/hashfunc/debotops/pkg/auth"
-	"github.com/hashfunc/debotops/pkg/core"
 )
 
 type LoginRequest struct {
@@ -22,27 +21,20 @@ func (server *Server) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	secret, err := server.getDeBotOpsSecret()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	if server.root == nil {
+		log.Println("`debotops-secret` is invalid")
+		return fiber.ErrInternalServerError
 	}
 
-	secretData := secret.Data
-
-	var root core.Root
-	if err := json.Unmarshal(secretData["root"], &root); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	err = bcrypt.CompareHashAndPassword(
-		[]byte(root.PasswordHash),
-		[]byte(payload.Password+root.SecretKey),
+	err := bcrypt.CompareHashAndPassword(
+		[]byte(server.root.PasswordHash),
+		[]byte(payload.Password+server.root.SecretKey),
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 
-	refresh, err := auth.NewAuth(root.SecretKey, auth.KindRefresh)
+	refresh, err := auth.NewAuth(server.root.SecretKey, auth.KindRefresh)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -54,7 +46,7 @@ func (server *Server) login(ctx *fiber.Ctx) error {
 		HTTPOnly: true,
 	})
 
-	access, err := auth.NewAuth(root.SecretKey, auth.KindAccess)
+	access, err := auth.NewAuth(server.root.SecretKey, auth.KindAccess)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

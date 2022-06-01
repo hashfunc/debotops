@@ -1,14 +1,23 @@
 package server
 
 import (
+	"encoding/json"
+	"log"
+	"sync"
+
 	"github.com/gofiber/fiber/v2"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/hashfunc/debotops/pkg/core"
+	"github.com/hashfunc/debotops/server/pipe"
 )
 
 type Server struct {
+	root                *core.Root
 	fiber               *fiber.App
 	kubernetesClientset *kubernetes.Clientset
 	debotopsClientset   *DeBotOpsClientset
+	waitGroup           *sync.WaitGroup
 }
 
 func NewServer() (*Server, error) {
@@ -26,6 +35,7 @@ func NewServer() (*Server, error) {
 		fiber:               fiber.New(),
 		kubernetesClientset: kubernetesClientset,
 		debotopsClientset:   debotopsClientset,
+		waitGroup:           &sync.WaitGroup{},
 	}
 
 	server.fiber.Post("/login", server.login)
@@ -34,6 +44,38 @@ func NewServer() (*Server, error) {
 	return server, nil
 }
 
-func (server *Server) Start() error {
-	return server.fiber.Listen(":8386")
+func (server *Server) Start() {
+	server.runPipe()
+	server.runServer()
+	server.waitGroup.Wait()
+}
+
+func (server *Server) runServer() {
+	server.waitGroup.Add(1)
+
+	go func() {
+		err := server.fiber.Listen(":8386")
+		log.Fatal(err)
+	}()
+}
+
+func (server *Server) runPipe() {
+	server.waitGroup.Add(2)
+
+	secretPipe := pipe.NewSecretPipe("default", server.kubernetesClientset)
+	go secretPipe.Run()
+
+	go func() {
+		for {
+			select {
+
+			case secret := <-secretPipe.Channel:
+				root := new(core.Root)
+				if err := json.Unmarshal(secret.Data["root"], root); err != nil {
+					server.root = nil
+				}
+				server.root = root
+			}
+		}
+	}()
 }
