@@ -38,9 +38,10 @@ func getClientset() (*kubernetes.Clientset, error) {
 }
 
 func (server *Server) getDeBotOpsSecret() (*corev1.Secret, error) {
+	namespaceForSecret := core.GetNamespaceForSecret()
 	return server.kubernetesClientset.
 		CoreV1().
-		Secrets("default").
+		Secrets(namespaceForSecret).
 		Get(context.TODO(), core.DeBotOpsSecretName, metav1.GetOptions{})
 }
 

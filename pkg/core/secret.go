@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,4 +86,12 @@ func encryptPassword(password, secret string) (string, error) {
 	}
 
 	return string(hashBytes), nil
+}
+
+func GetNamespaceForSecret() string {
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace != "" {
+		return namespace
+	}
+	return "default"
 }

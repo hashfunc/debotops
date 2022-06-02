@@ -25,7 +25,7 @@ type ListenerReconciler struct {
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=listeners/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;create
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create
 
 //+kubebuilder:rbac:groups=networking.istio.io,resources=gateways,verbs=get;list;watch;create;update
 
@@ -61,10 +61,12 @@ func IgnoreIsNotFound(err error) error {
 func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	_, err := k8s.GetDeBotOpsSecret(r.Client, ctx, request.Namespace)
+	namespaceForSecret := core.GetNamespaceForSecret()
+
+	_, err := k8s.GetDeBotOpsSecret(r.Client, ctx, namespaceForSecret)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			rootSecrets, err := core.NewDeBotOpsSecret(request.Namespace)
+			rootSecrets, err := core.NewDeBotOpsSecret(namespaceForSecret)
 			if err != nil {
 				return ctrl.Result{}, err
 			}

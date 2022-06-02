@@ -62,7 +62,9 @@ func (server *Server) runServer() {
 func (server *Server) runPipe() {
 	server.waitGroup.Add(2)
 
-	secretPipe := pipe.NewSecretPipe("default", server.kubernetesClientset)
+	namespaceForSecret := core.GetNamespaceForSecret()
+
+	secretPipe := pipe.NewSecretPipe(namespaceForSecret, server.kubernetesClientset)
 	go secretPipe.Run()
 
 	go func() {
