@@ -31,8 +31,12 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 
+	fiberConfig := fiber.Config{
+		DisableStartupMessage: true,
+	}
+
 	server := &Server{
-		fiber:               fiber.New(),
+		fiber:               fiber.New(fiberConfig),
 		kubernetesClientset: kubernetesClientset,
 		debotopsClientset:   debotopsClientset,
 		waitGroup:           &sync.WaitGroup{},
