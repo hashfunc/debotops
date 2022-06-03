@@ -1,17 +1,13 @@
 package server
 
 import (
-	"context"
 	"os"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/hashfunc/debotops/api/v1alpha1"
-	"github.com/hashfunc/debotops/pkg/core"
 )
 
 func getClientConfigLoader() clientcmd.ClientConfig {
@@ -35,14 +31,6 @@ func getClientset() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
-}
-
-func (server *Server) getDeBotOpsSecret() (*corev1.Secret, error) {
-	namespaceForSecret := core.GetNamespaceForSecret()
-	return server.kubernetesClientset.
-		CoreV1().
-		Secrets(namespaceForSecret).
-		Get(context.TODO(), core.DeBotOpsSecretName, metav1.GetOptions{})
 }
 
 type DeBotOpsClientset struct {
