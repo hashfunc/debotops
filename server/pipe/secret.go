@@ -38,23 +38,19 @@ func (pipe *SecretPipe) Run() {
 		log.Fatal(err)
 	}
 
-	for {
-		select {
+	for event := range watcher.ResultChan() {
+		switch event.Type {
 
-		case event := <-watcher.ResultChan():
-			switch event.Type {
-
-			case watch.Added, watch.Modified:
-				secret, ok := event.Object.(*corev1.Secret)
-				if !ok {
-					continue
-				}
-
-				pipe.Channel <- secret
-
-			case watch.Deleted:
-				pipe.Channel <- nil
+		case watch.Added, watch.Modified:
+			secret, ok := event.Object.(*corev1.Secret)
+			if !ok {
+				continue
 			}
+
+			pipe.Channel <- secret
+
+		case watch.Deleted:
+			pipe.Channel <- nil
 		}
 	}
 }
