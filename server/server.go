@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
+	jwtmiddleware "github.com/gofiber/jwt/v3"
+	"github.com/golang-jwt/jwt/v4"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/hashfunc/debotops/pkg/core"
@@ -44,6 +46,10 @@ func NewServer() (*Server, error) {
 
 	server.fiber.Post("/login", server.login)
 	server.fiber.Post("/refresh", server.refresh)
+
+	server.fiber.Use(jwtmiddleware.New(
+		jwtmiddleware.Config{KeyFunc: server.keyFunc},
+	))
 
 	return server, nil
 }
@@ -84,4 +90,8 @@ func (server *Server) runPipe() {
 			}
 		}
 	}()
+}
+
+func (server *Server) keyFunc(_ *jwt.Token) (interface{}, error) {
+	return []byte(server.root.SecretKey), nil
 }

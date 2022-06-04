@@ -13,9 +13,7 @@ func (server *Server) refresh(ctx *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	token, err := jwt.ParseWithClaims(refreshTokenCookie, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(server.root.SecretKey), nil
-	})
+	token, err := jwt.ParseWithClaims(refreshTokenCookie, &auth.Claims{}, server.keyFunc)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
