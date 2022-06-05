@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
-	jwtmiddleware "github.com/gofiber/jwt/v3"
 	"github.com/golang-jwt/jwt/v4"
 	"k8s.io/client-go/kubernetes"
 
@@ -44,12 +43,7 @@ func NewServer() (*Server, error) {
 		waitGroup:           &sync.WaitGroup{},
 	}
 
-	server.fiber.Post("/login", server.login)
-	server.fiber.Post("/refresh", server.refresh)
-
-	server.fiber.Use(jwtmiddleware.New(
-		jwtmiddleware.Config{KeyFunc: server.keyFunc},
-	))
+	server.setup()
 
 	return server, nil
 }
