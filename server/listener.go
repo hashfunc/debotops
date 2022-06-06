@@ -16,7 +16,12 @@ func (server *Server) listListeners(ctx *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 
-	return ctx.JSON(listeners)
+	return ctx.JSON(
+		&Response{
+			Status: StatusOK,
+			Data:   listeners,
+		},
+	)
 }
 
 func (server *Server) getListener(ctx *fiber.Ctx) error {
@@ -33,5 +38,10 @@ func (server *Server) getListener(ctx *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 
-	return ctx.JSON(listener)
+	return ctx.JSON(
+		&Response{
+			Status: StatusOK,
+			Data:   listener,
+		},
+	)
 }

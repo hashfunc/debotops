@@ -51,9 +51,12 @@ func (server *Server) login(ctx *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	data := fiber.Map{
-		"token": access.String(),
-	}
-
-	return ctx.JSON(data)
+	return ctx.JSON(
+		&Response{
+			Status: StatusOK,
+			Data: fiber.Map{
+				"token": access.String(),
+			},
+		},
+	)
 }
