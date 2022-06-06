@@ -11,7 +11,10 @@ func (server *Server) setRoute() {
 	server.fiber.Post("/refresh", server.refresh)
 
 	server.fiber.Use(jwtmiddleware.New(
-		jwtmiddleware.Config{KeyFunc: server.keyFunc},
+		jwtmiddleware.Config{
+			ErrorHandler: jwtErrorHandler,
+			KeyFunc:      server.keyFunc,
+		},
 	))
 
 	server.fiber.Get("/resources/listeners", server.listListeners)

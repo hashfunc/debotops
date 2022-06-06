@@ -34,6 +34,7 @@ func NewServer() (*Server, error) {
 
 	fiberConfig := fiber.Config{
 		DisableStartupMessage: true,
+		ErrorHandler:          defaultErrorHandler,
 	}
 
 	server := &Server{
