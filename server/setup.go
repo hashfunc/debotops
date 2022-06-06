@@ -13,4 +13,7 @@ func (server *Server) setRoute() {
 	server.fiber.Use(jwtmiddleware.New(
 		jwtmiddleware.Config{KeyFunc: server.keyFunc},
 	))
+
+	server.fiber.Get("/resources/listeners", server.listListeners)
+	server.fiber.Get("/resources/listeners/:namespace/:name", server.getListener)
 }
