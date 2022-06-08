@@ -53,8 +53,11 @@ spec:
                       properties:
                         credential:
                           type: string
+                        mode:
+                          type: string
                       required:
                       - credential
+                      - mode
                       type: object
                   required:
                   - hosts

@@ -9,6 +9,7 @@ type ListenerGateway struct {
 }
 
 type ListenerTLS struct {
+	Mode       string `json:"mode"`
 	Credential string `json:"credential"`
 }
 

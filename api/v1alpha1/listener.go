@@ -66,6 +66,9 @@ func (in *Listener) NewGatewayServers() []*istio.Server {
 	servers := make([]*istio.Server, len(in.Spec.Bind))
 
 	for index, bind := range in.Spec.Bind {
+		mode := istio.ServerTLSSettings_TLSmode(
+			istio.ServerTLSSettings_TLSmode_value[bind.TLS.Mode],
+		)
 		servers[index] = &istio.Server{
 			Hosts: bind.Hosts,
 			Port: &istio.Port{
@@ -74,7 +77,7 @@ func (in *Listener) NewGatewayServers() []*istio.Server {
 				Protocol: bind.Protocol,
 			},
 			Tls: &istio.ServerTLSSettings{
-				Mode:           istio.ServerTLSSettings_SIMPLE,
+				Mode:           mode,
 				CredentialName: bind.TLS.Credential,
 			},
 		}
