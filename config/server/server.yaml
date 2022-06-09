@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: debotops-server
+  labels:
+    debotops: server
+spec:
+  selector:
+    debotops: server
+  ports:
+  - port: 8386
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debotops-server
+  namespace: system
+  labels:
+    debotops: server
+spec:
+  selector:
+    matchLabels:
+      debotops: server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        debotops: server
+    spec:
+      containers:
+      - command:
+        - /server
+        image: server:latest
+        name: debotops-server
+        ports:
+        - containerPort: 8386
+        # TODO
+        # livenessProbe:
+        #   httpGet:
+        #     path: /healthz
+        #     port: 8386
+        #   initialDelaySeconds: 15
+        #  periodSeconds: 30
+        # readinessProbe:
+        #   httpGet:
+        #     path: /readyz
+        #     port: 8386
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 30
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      serviceAccountName: controller-manager

@@ -14,7 +14,8 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+OPERATOR_IMG ?= debotops-operator:latest
+SERVER_IMG ?= debotops-server:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
@@ -49,7 +50,7 @@ all: build
 
 .PHONY: help
 help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
 
@@ -61,13 +62,27 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: fmt-operator
+fmt-operator: ## Run go fmt [operator].
+	go fmt cmd/operator/main.go
+
+.PHONY: vet-operator
+vet-operator: ## Run go vet [operator].
+	go vet cmd/operator/main.go
+
+.PHONY: fmt-server
+fmt-server: ## Run go fmt [server].
+	go fmt cmd/server/main.go
+
+.PHONY: vet-server
+vet-server: ## Run go vet [server].
+	go vet cmd/server/main.go
+
 .PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+fmt: fmt-operator fmt-server ## Run go fmt.
 
 .PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
+vet: vet-operator vet-server ## Run go vet.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
@@ -75,21 +90,39 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 ##@ Build
 
-.PHONY: build
-build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+.PHONY: build-operator
+build-operator: generate fmt-operator vet-operator ## Build manager binary.
+	go build -o bin/manager cmd/operator/main.go
 
-.PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+.PHONY: run-operator
+run-operator: manifests generate fmt-operator vet-operator ## Run a controller from your host.
+	go run cmd/operator/main.go
 
-.PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+.PHONY: docker-build-operator
+docker-build-operator: test ## Build docker image with the manager.
+	docker build -t ${OPERATOR_IMG} -f docker/operator/Dockerfile .
 
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+.PHONY: docker-push-operator
+docker-push-operator: ## Push docker image with the manager.
+	docker push ${OPERATOR_IMG}
+
+.PHONY: build-server
+build-server: fmt-server vet-server ## Build server binary.
+	go build -o bin/server cmd/server/main.go
+
+.PHONY: run-server
+run-server: fmt-server vet-server ## Run a server from your host.
+	go run cmd/server/main.go
+
+.PHONY: docker-build-server
+docker-build-server: test ## Build docker image with the server.
+	docker build -t ${SERVER_IMG} -f docker/server/Dockerfile .
+
+.PHONY: docker-push-server
+docker-push-server: ## Push docker image with the server.
+	docker push ${SERVER_IMG}
+
+
 
 ##@ Deployment
 
@@ -107,7 +140,8 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${OPERATOR_IMG}
+	cd config/server && $(KUSTOMIZE) edit set image server=${SERVER_IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 .PHONY: undeploy
