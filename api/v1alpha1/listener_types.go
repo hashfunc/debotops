@@ -49,7 +49,8 @@ type Listener struct {
 type ListenerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Listener `json:"items"`
+
+	Items []Listener `json:"items"`
 }
 
 func init() {
