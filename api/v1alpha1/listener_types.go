@@ -14,11 +14,11 @@ type ListenerTLS struct {
 }
 
 type ListenerBind struct {
-	Hosts    []string    `json:"hosts"`
-	Name     string      `json:"name"`
-	Port     uint32      `json:"port"`
-	Protocol string      `json:"protocol"`
-	TLS      ListenerTLS `json:"tls"`
+	Hosts    []string     `json:"hosts"`
+	Name     string       `json:"name"`
+	Port     uint32       `json:"port"`
+	Protocol string       `json:"protocol"`
+	TLS      *ListenerTLS `json:"tls,omitempty"`
 }
 
 // ListenerSpec defines the desired state of Listener

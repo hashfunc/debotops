@@ -64,7 +64,6 @@ spec:
                   - name
                   - port
                   - protocol
-                  - tls
                   type: object
                 type: array
               gateway:
