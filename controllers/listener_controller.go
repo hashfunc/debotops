@@ -108,13 +108,13 @@ func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	revision, err := listener.Hash()
+	revision, err := debotops.Revision(&listener.Spec)
 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if gateway.Annotations[debotops.GetHashKey()] != revision {
+	if gateway.Annotations[debotops.RevisionKey()] != revision {
 		newGateway, err := listener.NewGateway()
 
 		if err != nil {
