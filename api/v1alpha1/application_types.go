@@ -5,12 +5,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type (
-	ApplicationEnvironment corev1.EnvVar
-	ApplicationPort        corev1.ContainerPort
-	ApplicationResource    corev1.ResourceRequirements
-)
-
 type ApplicationHealth struct {
 	Startup *corev1.Probe `json:"startup"`
 	Ready   *corev1.Probe `json:"ready"`
@@ -18,15 +12,15 @@ type ApplicationHealth struct {
 }
 
 type ApplicationContainer struct {
-	Name         string                   `json:"name"`
-	Image        string                   `json:"image"`
-	Ports        []ApplicationPort        `json:"ports"`
-	Environments []ApplicationEnvironment `json:"environments"`
-	Command      []string                 `json:"command"`
-	Args         []string                 `json:"args"`
-	Replicas     int32                    `json:"replicas"`
-	Resource     ApplicationResource      `json:"resource"`
-	Health       ApplicationHealth        `json:"health"`
+	Name         string                      `json:"name"`
+	Image        string                      `json:"image"`
+	Ports        []corev1.ContainerPort      `json:"ports"`
+	Environments []corev1.EnvVar             `json:"environments"`
+	Command      []string                    `json:"command"`
+	Args         []string                    `json:"args"`
+	Replicas     int32                       `json:"replicas"`
+	Resource     corev1.ResourceRequirements `json:"resource"`
+	Health       ApplicationHealth           `json:"health"`
 }
 
 type ApplicationOptionProxy struct {
