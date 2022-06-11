@@ -18,7 +18,6 @@ type ApplicationContainer struct {
 	Environments []corev1.EnvVar              `json:"environments,omitempty"`
 	Command      []string                     `json:"command,omitempty"`
 	Args         []string                     `json:"args,omitempty"`
-	Replicas     int32                        `json:"replicas"`
 	Resource     *corev1.ResourceRequirements `json:"resource,omitempty"`
 	Health       *ApplicationHealth           `json:"health,omitempty"`
 }
@@ -33,6 +32,7 @@ type ApplicationOption struct {
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
+	Scale     int32                `json:"scale"`
 	Container ApplicationContainer `json:"container"`
 	Option    *ApplicationOption   `json:"option,omitempty"`
 }

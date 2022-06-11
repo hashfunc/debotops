@@ -25,7 +25,7 @@ func (in *Application) NewDeployment() (*appsv1.Deployment, error) {
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &in.Spec.Container.Replicas,
+			Replicas: &in.Spec.Scale,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"debotops/application": in.Name,

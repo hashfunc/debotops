@@ -656,9 +656,6 @@ spec:
                       - containerPort
                       type: object
                     type: array
-                  replicas:
-                    format: int32
-                    type: integer
                   resource:
                     description: ResourceRequirements describes the compute resource
                       requirements.
@@ -689,7 +686,6 @@ spec:
                 required:
                 - image
                 - name
-                - replicas
                 type: object
               option:
                 properties:
@@ -701,8 +697,12 @@ spec:
                     - enable
                     type: object
                 type: object
+              scale:
+                format: int32
+                type: integer
             required:
             - container
+            - scale
             type: object
           status:
             description: ApplicationStatus defines the observed state of Application
