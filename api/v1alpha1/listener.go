@@ -9,7 +9,7 @@ import (
 )
 
 func (in *Listener) NewGateway() (*istioclient.Gateway, error) {
-	hash, err := Revision(&in.Spec)
+	revision, err := Revision(&in.Spec)
 
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (in *Listener) NewGateway() (*istioclient.Gateway, error) {
 			Namespace:       in.Namespace,
 			OwnerReferences: k8s.NewOwnerReferences(in),
 			Annotations: map[string]string{
-				RevisionKey(): hash,
+				RevisionKey(): revision,
 			},
 		},
 		Spec: istio.Gateway{
