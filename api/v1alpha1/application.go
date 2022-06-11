@@ -46,9 +46,13 @@ func (in *Application) NewDeployment() (*appsv1.Deployment, error) {
 		},
 	}
 
-	if in.Spec.Option.Proxy.Enable {
-		labels := deployment.Spec.Template.ObjectMeta.Labels
-		labels["sidecar.istio.io/inject"] = "true"
+	if in.Spec.Option != nil {
+		if in.Spec.Option.Proxy != nil {
+			if in.Spec.Option.Proxy.Enable {
+				labels := deployment.Spec.Template.ObjectMeta.Labels
+				labels["sidecar.istio.io/inject"] = "true"
+			}
+		}
 	}
 
 	return deployment, nil

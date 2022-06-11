@@ -28,13 +28,13 @@ type ApplicationOptionProxy struct {
 }
 
 type ApplicationOption struct {
-	Proxy ApplicationOptionProxy `json:"proxy"`
+	Proxy *ApplicationOptionProxy `json:"proxy,omitempty"`
 }
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
 	Container ApplicationContainer `json:"container"`
-	Option    ApplicationOption    `json:"option"`
+	Option    *ApplicationOption   `json:"option,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application

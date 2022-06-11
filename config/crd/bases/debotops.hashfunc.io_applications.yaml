@@ -700,12 +700,9 @@ spec:
                     required:
                     - enable
                     type: object
-                required:
-                - proxy
                 type: object
             required:
             - container
-            - option
             type: object
           status:
             description: ApplicationStatus defines the observed state of Application
