@@ -12,15 +12,15 @@ type ApplicationHealth struct {
 }
 
 type ApplicationContainer struct {
-	Name         string                      `json:"name"`
-	Image        string                      `json:"image"`
-	Ports        []corev1.ContainerPort      `json:"ports"`
-	Environments []corev1.EnvVar             `json:"environments"`
-	Command      []string                    `json:"command"`
-	Args         []string                    `json:"args"`
-	Replicas     int32                       `json:"replicas"`
-	Resource     corev1.ResourceRequirements `json:"resource"`
-	Health       ApplicationHealth           `json:"health"`
+	Name         string                       `json:"name"`
+	Image        string                       `json:"image"`
+	Ports        []corev1.ContainerPort       `json:"ports,omitempty"`
+	Environments []corev1.EnvVar              `json:"environments,omitempty"`
+	Command      []string                     `json:"command,omitempty"`
+	Args         []string                     `json:"args,omitempty"`
+	Replicas     int32                        `json:"replicas"`
+	Resource     *corev1.ResourceRequirements `json:"resource,omitempty"`
+	Health       *ApplicationHealth           `json:"health,omitempty"`
 }
 
 type ApplicationOptionProxy struct {

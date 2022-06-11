@@ -687,15 +687,9 @@ spec:
                         type: object
                     type: object
                 required:
-                - args
-                - command
-                - environments
-                - health
                 - image
                 - name
-                - ports
                 - replicas
-                - resource
                 type: object
               option:
                 properties:
