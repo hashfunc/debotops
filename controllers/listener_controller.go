@@ -49,13 +49,6 @@ func (r *ListenerReconciler) GetGateway(ctx context.Context, request ctrl.Reques
 	return gateway, nil
 }
 
-func IgnoreIsNotFound(err error) error {
-	if k8serrors.IsNotFound(err) {
-		return nil
-	}
-	return err
-}
-
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *ListenerReconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
