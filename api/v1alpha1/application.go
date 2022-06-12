@@ -82,3 +82,42 @@ func (in *Application) toContainer() *corev1.Container {
 
 	return container
 }
+
+func (in *Application) NewService() (*corev1.Service, error) {
+	revision, err := Revision(&in.Spec)
+
+	if err != nil {
+		return nil, err
+	}
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            in.Name,
+			Namespace:       in.Namespace,
+			OwnerReferences: k8s.NewOwnerReferences(in),
+			Annotations: map[string]string{
+				RevisionKey(): revision,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"debotops/application": in.Name,
+			},
+		},
+	}
+
+	servicePorts := make([]corev1.ServicePort, len(in.Spec.Container.Ports))
+
+	for index, port := range in.Spec.Container.Ports {
+		servicePort := corev1.ServicePort{
+			Name:     port.Name,
+			Port:     port.ContainerPort,
+			Protocol: port.Protocol,
+		}
+		servicePorts[index] = servicePort
+	}
+
+	service.Spec.Ports = servicePorts
+
+	return service, nil
+}

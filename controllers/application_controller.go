@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,6 +25,7 @@ type ApplicationReconciler struct {
 //+kubebuilder:rbac:groups=debotops.hashfunc.io,resources=applications/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch
 
 func (r *ApplicationReconciler) GetApplication(ctx context.Context, request ctrl.Request) (*debotops.Application, error) {
 	application := &debotops.Application{}
@@ -43,6 +45,16 @@ func (r *ApplicationReconciler) GetDeployment(ctx context.Context, request ctrl.
 	}
 
 	return deployment, nil
+}
+
+func (r *ApplicationReconciler) GetService(ctx context.Context, request ctrl.Request) (*corev1.Service, error) {
+	service := &corev1.Service{}
+
+	if err := r.Get(ctx, request.NamespacedName, service); err != nil {
+		return nil, err
+	}
+
+	return service, nil
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -97,6 +109,44 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, request ctrl.Requ
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	if application.Spec.Container.Ports != nil {
+		service, err := r.GetService(ctx, request)
+
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				newService, err := application.NewService()
+
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+
+				if err := r.Create(ctx, newService); err != nil {
+					return ctrl.Result{}, err
+				}
+
+				return ctrl.Result{Requeue: true}, nil
+			}
+			return ctrl.Result{}, err
+		}
+
+		if service.Annotations[debotops.RevisionKey()] != revision {
+			newService, err := application.NewService()
+
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			newService.SetResourceVersion(service.GetResourceVersion())
+
+			if err := r.Update(ctx, newService); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			return ctrl.Result{Requeue: true}, nil
+		}
+
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -105,5 +155,6 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&debotops.Application{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
