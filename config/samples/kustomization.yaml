@@ -2,4 +2,5 @@
 resources:
 - debotops_v1alpha1_listener.yaml
 - debotops_v1alpha1_application.yaml
+- debotops_v1alpha1_mapping.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -1,0 +1,6 @@
+apiVersion: debotops.hashfunc.io/v1alpha1
+kind: Mapping
+metadata:
+  name: mapping-sample
+spec:
+  # TODO(user): Add fields here
