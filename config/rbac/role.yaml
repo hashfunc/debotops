@@ -89,6 +89,32 @@ rules:
   - patch
   - update
 - apiGroups:
+  - debotops.hashfunc.io
+  resources:
+  - mappings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - debotops.hashfunc.io
+  resources:
+  - mappings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - debotops.hashfunc.io
+  resources:
+  - mappings/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - networking.istio.io
   resources:
   - gateways

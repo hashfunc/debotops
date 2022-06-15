@@ -4,8 +4,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type MappingGateway struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type MappingApplication struct {
+	Name string `json:"name"`
+	Port uint32 `json:"port"`
+}
+
 // MappingSpec defines the desired state of Mapping
 type MappingSpec struct {
+	Hosts       []string           `json:"hosts"`
+	Gateway     MappingGateway     `json:"gateway"`
+	Application MappingApplication `json:"application"`
 }
 
 // MappingStatus defines the observed state of Mapping
