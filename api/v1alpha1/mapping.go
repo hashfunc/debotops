@@ -18,9 +18,15 @@ func (in *Mapping) NewVirtualService(application *Application) (*istioclient.Vir
 	}
 
 	host := fmt.Sprintf(
-		"%s.%s.svc.cluster.local.",
+		"%s.%s.svc.cluster.local",
 		application.Name,
 		application.Namespace,
+	)
+
+	gateway := fmt.Sprintf(
+		"%s/%s",
+		in.Spec.Listener.Namespace,
+		in.Spec.Listener.Name,
 	)
 
 	virtualService := &istioclient.VirtualService{
@@ -34,6 +40,9 @@ func (in *Mapping) NewVirtualService(application *Application) (*istioclient.Vir
 		},
 		Spec: istio.VirtualService{
 			Hosts: in.Spec.Hosts,
+			Gateways: []string{
+				gateway,
+			},
 			Http: []*istio.HTTPRoute{
 				{
 					Name: application.Name,

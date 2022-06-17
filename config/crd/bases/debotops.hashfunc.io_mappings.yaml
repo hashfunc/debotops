@@ -46,7 +46,11 @@ spec:
                 - name
                 - port
                 type: object
-              gateway:
+              hosts:
+                items:
+                  type: string
+                type: array
+              listener:
                 properties:
                   name:
                     type: string
@@ -56,14 +60,10 @@ spec:
                 - name
                 - namespace
                 type: object
-              hosts:
-                items:
-                  type: string
-                type: array
             required:
             - application
-            - gateway
             - hosts
+            - listener
             type: object
           status:
             description: MappingStatus defines the observed state of Mapping
