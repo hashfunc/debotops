@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: debotops-server
+  name: server
   labels:
     debotops: server
 spec:
@@ -13,7 +13,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: debotops-server
+  name: server
   namespace: system
   labels:
     debotops: server
@@ -31,7 +31,7 @@ spec:
       - command:
         - /server
         image: server:latest
-        name: debotops-server
+        name: server
         ports:
         - containerPort: 8386
         # TODO
